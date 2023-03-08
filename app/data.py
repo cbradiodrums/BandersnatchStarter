@@ -20,9 +20,18 @@ class Database:
         monster_list = [Monster().to_dict() for _ in range(amount)]
         self.collection.insert_many(monster_list)
 
+    def custom_add(self, monster: dict):
+        """ MongoDB: Adds a User's Custom Monster to the DataBase """
+        self.collection.insert_one(monster)
+
     def reset(self):
         """ MongoDB: Empties the Database Collection of all documents """
         return self.collection.delete_many({})
+
+    def remove(self, deletions: int):
+        """ MongoDB: Remove a finite amount of rows """
+        for i in range(deletions):
+            self.collection.delete_one({})
 
     def count(self) -> int:
         """ MongoDB: Counts the amount of documents in the Database Collection """

@@ -1,6 +1,151 @@
 {% extends "layout.html" %}
 {% block content %}
+{% set rank = ["Very Common", "Common", "Uncommon", "Rare", "Epic", "Legendary" ] %}
+{% set dice = [ 4, 6, 8, 10, 12, 20] %}
     <h1>Bandersnatch Data</h1>
+    <p>
+    <form id="data_manipulation" name="data_manipulation[]" method="post">
+    <table style="margin-left: auto; margin-right: auto; justify-content:center; align-items: center; color:white">
+        <tr>
+            <th colspan="5" style="font-size: x-large; text-align: center">
+                Data Manipulation Features
+            </th>
+        </tr>
+        <tr>
+            <th colspan="2" style="font-size: large; text-align: center">
+                <label for="delete_rows">
+                    -- Delete Random Monsters --
+                </label>
+            </th>
+            <th colspan="2" style="font-size: large; text-align: center">
+                <label for="add_rows">
+                    -- Add Random Monsters --
+                </label>
+            </th>
+        </tr>
+        <tr>
+            <td>
+                <select name="delete_rows" id="delete_rows">
+                    <option selected></option>
+                    {% if count > 0 %}
+                    <optgroup label="Empty Database">
+                        <option> ALL ({{ count }}) </option>
+                    </optgroup>
+                    <optgroup label="Custom">
+                        {% for i in range(1, count + 1) %}
+                            <option> {{  i  }}</option>
+                        {% endfor %}
+                    </optgroup>
+                    {% endif %}
+                </select>
+            </td><td>
+            <button type="submit" name="data_manipulation[]" value="delete_rows"> Delete Rows! </button>
+            </td>
+            <td>
+                <select name="add_rows" id="add_rows">
+                    <option selected></option>
+                        {% if 1000 - count > 0 %}
+                        <optgroup label="Reset Database">
+                            <option> RESET to 1000 (Add {{ 1000 - count }}) </option>
+                        </optgroup>
+                        {% endif %}
+                        {% if 1000 - count < 0 %}
+                        <optgroup label="Reset Database">
+                            <option> RESET to 1000 (Remove {{ 1000 - count }}) </option>
+                        </optgroup>
+                        {% endif %}
+                    </optgroup>
+                    <optgroup label="Custom">
+                        {% for i in range(1, 1001) %}
+                            <option> {{  i  }}</option>
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </td><td>
+            <button type="submit" name="data_manipulation[]" value="add_rows"> Add Rows! </button>
+            </td>
+        </tr>
+        <tr>
+            <th colspan="5" style="font-size: large; text-align: center">
+                <label for="custom">
+                    -- Add Custom Monster --
+                </label>
+            </th>
+        </tr>
+        <tr>
+            <th><label for="name"> Name </label></th>
+            <th><label for="type"> Type </label></th>
+            <th><label for="level"> Level </label></th>
+            <th><label for="rarity"> Rarity </label></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="name" name="name"></td>
+            <td><input type="text" id="type" name="type"></td>
+            <td>
+                <select name="level" id="level">
+                    <option selected></option>
+                    {% for i in range(1000) %}
+                        <option> {{  i  }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <select name="rarity" id="rarity">
+                    <option selected></option>
+                    {% for i in range( rank|length ) %}
+                        <option value="Rank {{ i }}">
+                            Rank {{ i }} ( {{ rank[i] }} )
+                        </option>
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Damage</th>
+        </tr>
+        <tr>
+            <td>
+                <select name="dice_amount" id="dice_amount">
+                    <option selected></option>
+                    {% for i in range(1, 21) %}
+                        <option value="{{ i }}">
+                            {{ i }} x
+                        </option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <select name="dice_type" id="dice_type">
+                    <option selected></option>
+                    {% for i in dice %}
+                        <option value="d{{ i }}">
+                            d{{ i }}
+                        </option>
+                    {% endfor %}
+                </select>
+            <td>
+                <select name="mod" id="mod">
+                    <option selected value=""></option>
+                    {% for i in range(1, 21) %}
+                        <option value="+{{ i }}">
+                            +{{ i }}
+                        </option>
+                    {% endfor %}
+                </select></td>
+        </tr>
+        <tr>
+            <th><label for="health"> Health </label></th>
+            <th><label for="energy"> Energy </label></th>
+            <th><label for="sanity"> Sanity </label></th>
+        </tr>
+        <tr>
+            <td><input type="number" min="1" step="0.01" id="health" name="health"></td>
+            <td><input type="number" min="1" step="0.01" id="energy" name="energy"></td>
+            <td><input type="number" min="1" step="0.01" id="sanity" name="sanity"></td>
+            <td><button type="submit" name="data_manipulation[]"  value="custom"> Create Custom Monster! </button></td>
+        </tr>
+     </table>
+    </form>
     <p>Monster Count: {{ count | safe }}</p>
     {{ table | safe }}
 {% endblock %}

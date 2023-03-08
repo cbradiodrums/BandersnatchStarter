@@ -10,7 +10,7 @@ from app.data import Database
 from app.graph import chart
 from app.machine import Machine
 
-SPRINT = 0
+SPRINT = 1
 APP = Flask(__name__)
 
 
@@ -24,11 +24,69 @@ def home():
     )
 
 
-@APP.route("/data")
+@APP.route("/data", methods=["GET", "POST"])
 def data():
     if SPRINT < 1:
         return render_template("data.html")
     db = Database()
+
+    # If the USER submitted data -- Custom Block
+    if request.method == 'POST':
+
+        # If random monsters are to be Deleted
+        if 'delete_rows' in request.form.getlist('data_manipulation[]'):
+
+            # If the user actually selects a value for deletions
+            if request.form.get('delete_rows'):
+
+                if 'ALL' in request.form.get('delete_rows'):
+                    db.reset()
+
+                else:
+                    deletions = int(request.form.get('delete_rows'))
+                    db.remove(deletions=deletions)
+
+        # If random Monsters will be added
+        elif 'add_rows' in request.form.getlist('data_manipulation[]'):
+
+            # If the user actually selects a value for additions
+            if request.form.get('add_rows'):
+
+                if 'RESET' in request.form.get('add_rows'):
+                    restore = 1000 - db.count()
+                    if restore > 0:
+                        db.seed(amount=restore)
+                    elif restore < 0:
+                        db.remove(deletions=abs(restore))
+
+                else:
+                    additions = int(request.form.get('add_rows'))
+                    db.seed(amount=additions)
+
+        # If User added a custom monster
+        elif 'custom' in request.form.getlist('data_manipulation[]'):
+
+            default = Monster().to_dict()
+            if request.form.get('dice_amount') and request.form.get('dice_type'):
+                damage = f"{request.form.get('dice_amount')}" \
+                             f"{request.form.get('dice_type')}" \
+                             f"{request.form.get('mod')}"
+            else:
+                damage = default['Damage']
+
+            usr_monster = {
+              "Name": request.form.get('name') if request.form.get('name').strip(' ') else default['Name'],
+              "Type": request.form.get('type') if request.form.get('type').strip(' ') else default['Type'],
+              "Level": request.form.get('level') if request.form.get('level') else default['Level'],
+              "Rarity": request.form.get('rarity') if request.form.get('rarity') else default['Rarity'],
+              "Damage": damage,
+              "Health": request.form.get('health') if request.form.get('health') else default['Health'],
+              "Energy": request.form.get('energy') if request.form.get('energy') else default['Energy'],
+              "Sanity": request.form.get('sanity') if request.form.get('sanity') else default['Sanity'],
+              "Timestamp": default["Timestamp"],
+            }
+            db.custom_add(monster=usr_monster)
+
     return render_template(
         "data.html",
         count=db.count(),
