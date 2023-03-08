@@ -3,6 +3,9 @@
 
 name: Python application
 
+env: # Or as an environment variable
+      super_secret: ${{ secrets.DB_URL }}
+
 on:
   push:
     branches: [ "main" ]
