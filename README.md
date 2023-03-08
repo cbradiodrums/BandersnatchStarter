@@ -1,5 +1,5 @@
 # Bandersnatch Project
-[![Pytest](https://github.com/cbradiodrums/BandersnatchStarter/actions/workflows/python-app.yml/badge.svg)](https://github.com/cbradiodrums/BandersnatchStarter/actions/workflows/python-app.yml.yml)
+[![Pytest](https://github.com/cbradiodrums/BandersnatchStarter/actions/workflows/python-app.yml/badge.svg)](https://github.com/cbradiodrums/BandersnatchStarter/actions/workflows/python-app.yml.yml)<br>
 Read the Documentation for information on how to get started.
 
 [Deployed App](https://bandersnatch.herokuapp.com)
