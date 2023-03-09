@@ -7,10 +7,10 @@ from flask import Flask, render_template, request
 from pandas import DataFrame
 
 from app.data import Database
-from app.graph import chart
+from app.graph import chart, corr_heatmap, bar_chart, damage_calc
 from app.machine import Machine
 
-SPRINT = 1
+SPRINT = 2
 APP = Flask(__name__)
 
 
@@ -99,25 +99,47 @@ def view():
     if SPRINT < 2:
         return render_template("view.html")
     db = Database()
-    options = ["Level", "Health", "Energy", "Sanity", "Rarity"]
-    x_axis = request.values.get("x_axis") or options[1]
-    y_axis = request.values.get("y_axis") or options[2]
-    target = request.values.get("target") or options[4]
-    graph = chart(
-        df=db.dataframe(),
-        x=x_axis,
-        y=y_axis,
-        target=target,
-    ).to_json()
-    return render_template(
-        "view.html",
-        options=options,
-        x_axis=x_axis,
-        y_axis=y_axis,
-        target=target,
-        count=db.count(),
-        graph=graph,
-    )
+
+    if not db.dataframe().empty:
+
+        # Altair Chart
+        options = ["Level", "Health", "Energy", "Sanity", "Rarity"]
+        x_axis = request.values.get("x_axis") or options[1]
+        y_axis = request.values.get("y_axis") or options[2]
+        target = request.values.get("target") or options[4]
+        graph = chart(
+            df=db.dataframe().drop('_id', axis=1),
+            x=x_axis,
+            y=y_axis,
+            target=target,
+        ).to_json()
+
+        # SNS Heatmap -- Drop Unique Cols
+        heat_cols = options + ['Type', 'Damage']
+        drop_cols = [i for i in db.dataframe().columns if i not in heat_cols]
+        df_hm1, df_hm2 = db.dataframe().drop(drop_cols, axis=1), db.dataframe().drop(drop_cols, axis=1)
+        heatmap, heatmap2 = corr_heatmap(df_hm1, ordinal=True), corr_heatmap(df_hm2)
+
+        # Bar Chart -- Damage
+        df_dmg = DataFrame({'Dice Roll + Modifier':  db.dataframe()['Damage'],
+                            'Average Damage': db.dataframe()['Damage'].apply(damage_calc)
+                            })
+        bar = bar_chart(x=df_dmg['Dice Roll + Modifier'], y=df_dmg['Average Damage'], df=df_dmg)
+
+        return render_template(
+            "view.html",
+            options=options,
+            x_axis=x_axis,
+            y_axis=y_axis,
+            target=target,
+            count=db.count(),
+            graph=graph,
+            heatmap=heatmap,
+            heatmap2=heatmap2,
+            bar=bar
+        )
+    else:
+        return render_template("view.html", warning='Please add some Monsters to the Database')
 
 
 @APP.route("/model", methods=["GET", "POST"])

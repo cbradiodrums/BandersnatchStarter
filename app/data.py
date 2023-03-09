@@ -59,4 +59,4 @@ if __name__ == '__main__':
     if db.count() < 1000:
         difference = 1000 - db.count()
         db.seed(amount=difference)
-    db.reset()  # Uncomment to reset table and test above!
+    # db.reset()  # Uncomment to reset table and test above!

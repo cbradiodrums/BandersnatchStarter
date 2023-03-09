@@ -7,52 +7,62 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Bandersnatch Viewer</h1>
-    <p>Monster Count: {{ count | safe }}</p>
+    {% if not warning %}
+        <h1>Bandersnatch Viewer</h1>
+        <p>Monster Count: {{ count | safe }}</p>
 
-    <form method="post" action="{{ url_for('view') }}">
-        <p><label>X-axis:
-            <select name="x_axis">
-                {% for op in options %}
-                    {% if op == x_axis %}
-                        <option selected="selected">{{ op }}</option>
-                    {% else %}
-                        <option>{{ op }}</option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-        </label></p>
-        <br class="clear">
-        <p><label>Y-axis:
-            <select name="y_axis">
-                {% for op in options %}
-                    {% if op == y_axis %}
-                        <option selected="selected">{{ op }}</option>
-                    {% else %}
-                        <option>{{ op }}</option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-        </label></p>
-        <br class="clear">
-        <p><label>Target:
-            <select name="target">
-                {% for op in options %}
-                    {% if op == target %}
-                        <option selected="selected">{{ op }}</option>
-                    {% else %}
-                        <option>{{ op }}</option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-        </label></p>
-        <br><br class="clear">
-        <button name="submit">Regenerate Chart</button>
-        <br class="clear">
-    </form>
+        <form method="post" action="{{ url_for('view') }}">
+            <p><label>X-axis:
+                <select name="x_axis">
+                    {% for op in options %}
+                        {% if op == x_axis %}
+                            <option selected="selected">{{ op }}</option>
+                        {% else %}
+                            <option>{{ op }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </label></p>
+            <br class="clear">
+            <p><label>Y-axis:
+                <select name="y_axis">
+                    {% for op in options %}
+                        {% if op == y_axis %}
+                            <option selected="selected">{{ op }}</option>
+                        {% else %}
+                            <option>{{ op }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </label></p>
+            <br class="clear">
+            <p><label>Target:
+                <select name="target">
+                    {% for op in options %}
+                        {% if op == target %}
+                            <option selected="selected">{{ op }}</option>
+                        {% else %}
+                            <option>{{ op }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </label></p>
+            <br><br class="clear">
+            <button name="submit">Regenerate Chart</button>
+            <br class="clear">
+        </form>
 
-    <div id="graph"></div>
-    <script type="text/javascript">
-        vegaEmbed('#graph', {{ graph | safe }});
-    </script>
+        <div id="graph"></div>
+        <script type="text/javascript">
+            vegaEmbed('#graph', {{ graph | safe }});
+        </script>
+        <h2>Bandersnatch Correlation Heatmap (Damage Ordinal)</h2>
+        <p><img src="{{ heatmap }}" alt="Heatmap"></p>
+        <h2>Bandersnatch Correlation Heatmap (Damage Custom)</h2>
+        <p><img src="{{ heatmap2 }}" alt="Heatmap2"></p>
+        <h2>Damage Custom Numerical Values</h2>
+        <p><img src="{{ bar }}" alt="bar"></p>
+    {% else %}
+        <h1> {{ warning }}</h1>
+    {% endif %}
 {% endblock %}
