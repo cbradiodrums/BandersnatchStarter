@@ -1,4 +1,4 @@
-from altair import Chart, Tooltip
+import altair as alt
 import seaborn as sns
 import matplotlib.pyplot as plt
 import io
@@ -8,16 +8,17 @@ from sklearn.preprocessing import OrdinalEncoder
 import numpy as np
 
 
-def chart(df: DataFrame, x, y, target) -> Chart:
+def chart(df: DataFrame, x, y, target) -> alt.Chart:
     """ Turns Pandas DataFrame into Altair Chart Class """
-    graph = Chart(
+    alt.themes.enable('dark')  # Enable dark mode theme
+    graph = alt.Chart(
         df,
         title=f"{y} by {x} for {target}",
     ).mark_circle(size=100).encode(
         x=x,
         y=y,
         color=target,
-        tooltip=Tooltip(df.columns.to_list())
+        tooltip=alt.Tooltip(df.columns.to_list())
     )
     return graph
 
@@ -63,6 +64,7 @@ def corr_heatmap(df: DataFrame, ordinal: any = None):
 
     # Create the heatmap using Seaborn
     fig, ax = plt.subplots(figsize=(8, 6))
+    plt.style.use('dark_background')  # Dark Mode
     sns.heatmap(corr_matrix, mask=mask, cmap="coolwarm", annot=True)
     if not ordinal:
         plt.title('Bandersnatch Correlation Heatmap (Damage Custom)')
@@ -117,6 +119,7 @@ def bar_chart(x, y, df: DataFrame):
     # Create the bar chart using Seaborn
     fig, ax = plt.subplots(figsize=(20, 16))
     sns.barplot(x=ss_y.values[:xy_len], y=ss_x[:xy_len])
+    plt.style.use('dark_background')  # Dark Mode
 
     # Set the plot title and axis labels
     plt.title("Average Damage vs. Dice Roll + Modifier")
