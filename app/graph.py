@@ -64,7 +64,7 @@ def corr_heatmap(df: DataFrame, ordinal: any = None):
 
     # Create the heatmap using Seaborn
     fig, ax = plt.subplots(figsize=(8, 6))
-    plt.style.use('dark_background')  # Dark Mode
+    plt.style.use('dark_background')  # Dark Mode Style
     sns.heatmap(corr_matrix, mask=mask, cmap="coolwarm", annot=True)
     if not ordinal:
         plt.title('Bandersnatch Correlation Heatmap (Damage Custom)')
