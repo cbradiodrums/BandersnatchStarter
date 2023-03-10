@@ -3,14 +3,14 @@ import os
 
 from Fortuna import random_int, random_float
 from MonsterLab import Monster
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, current_app
 from pandas import DataFrame
 
 from app.data import Database
 from app.graph import chart, corr_heatmap, bar_chart, damage_calc
 from app.machine import Machine
 
-SPRINT = 2
+SPRINT = 3
 APP = Flask(__name__)
 
 
@@ -148,13 +148,13 @@ def model():
         return render_template("model.html")
     db = Database()
     options = ["Level", "Health", "Energy", "Sanity", "Rarity"]
-    filepath = os.path.join("app", "model.joblib")
+    filepath = f'{current_app.root_path}\\model.joblib'
     if not os.path.exists(filepath):
+        print('file no exist')
         df = db.dataframe()
         machine = Machine(df[options])
         machine.save(filepath)
-    else:
-        machine = Machine.open(filepath)
+    machine, info = Machine.open(filepath)['model'], Machine.open(filepath)['info']
     stats = [round(random_float(1, 250), 2) for _ in range(3)]
     level = request.values.get("level", type=int) or random_int(1, 20)
     health = request.values.get("health", type=float) or stats.pop()
@@ -163,7 +163,6 @@ def model():
     prediction, confidence = machine(DataFrame(
         [dict(zip(options, (level, health, energy, sanity)))]
     ))
-    info = machine.info()
     return render_template(
         "model.html",
         info=info,
@@ -172,7 +171,7 @@ def model():
         energy=energy,
         sanity=sanity,
         prediction=prediction,
-        confidence=f"{confidence:.2%}",
+        confidence=f"{confidence:.2%}"
     )
 
 
