@@ -1,4 +1,5 @@
 import altair as alt
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import io
@@ -125,6 +126,48 @@ def bar_chart(x, y, df: DataFrame):
     plt.title("Average Damage vs. Dice Roll + Modifier")
     plt.xlabel(y.name)
     plt.ylabel(x.name)
+
+    # Save the image as a PNG in memory
+    buffer3 = io.BytesIO()
+    plt.savefig(buffer3, format="png", bbox_inches="tight")
+    buffer3.seek(0)
+    plt.close()
+
+    # Encode the image in base64 and return as a string that can be used as a src attribute in an HTML img tag
+    image_base64 = base64.b64encode(buffer3.getvalue()).decode("utf-8")
+    return f"data:image/png;base64,{image_base64}"
+
+
+def results_charts(df1, df2=None, df3=None):
+    """ Return the Predicted Results and Confidence Values! """
+
+    df1 = df1 if df1 else pd.DataFrame()
+    df2 = df2 if df2 else pd.DataFrame()
+    df3 = df3 if df3 else pd.DataFrame()
+
+    # create subplots depending on the number of data frames
+    fig, axes = plt.subplots(1, len([df for df in [df1, df2, df3] if df]), figsize=(10, 5))
+
+    # convert data frames to list for iteration
+    dfs = [df for df in [df1, df2, df3] if not df.empty]
+
+    # plot bar charts for each data frame
+    for i, df in enumerate(dfs):
+        df.plot.bar(x='Category', y='Value', ax=axes[i], legend=False)
+        axes[i].set_title(f'Data Frame {i + 1}')
+        axes[i].set_xlabel('Category')
+        axes[i].set_ylabel('Value')
+
+    # add space between subplots
+    plt.subplots_adjust(wspace=0.4)
+
+    # return combined bar plot
+    return plt.show()
+
+    # Set the plot title and axis labels
+    # plt.title("Average Damage vs. Dice Roll + Modifier")
+    # plt.xlabel(y.name)
+    # plt.ylabel(x.name)
 
     # Save the image as a PNG in memory
     buffer3 = io.BytesIO()

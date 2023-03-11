@@ -72,6 +72,10 @@
 
                 <!-- Display Model Info -->
                 <table>
+                    <tr>
+                        <th> Model Accuracy: </th>
+                        <td>{{ (rfc_model['model'].model.score(X, Y) * 100)|round(2)}}% </td>
+                    </tr>
                     {% for key in rfc_model['info'].keys() %}
                         <tr>
                             <th> {{ key }}: </th>
@@ -85,35 +89,6 @@
                         <td colspan="2"> {{ rfc_model['model'].model.get_params() }} </td>
                     </tr>
                 </table>
-                <h4>ia. Prediction Basis</h4>
-                <form id="form" method="post"> <!-- action="{{ url_for('model') }}"-->
-                    {% for option in options %}
-                        {% if option == 'Level' %}
-                            <p><label>
-                                Level: <input name="level" value="{{ level }}"/>
-                            </label></p>
-                        {% elif option != 'Rarity' %}
-                            <p><label>
-                                Health: <input name="health" value="{{ health }}"/>
-                             </label></p>
-                        {% endif %}
-                        <br class="clear">
-                    {% endfor %}
-                    <button type="submit">Predict Rarity</button>
-                    <br class="clear">
-                </form>
-
-                <!-- If the Model Predicted -->
-                {% if rfc_prediction %}
-                    <table>
-                        {% for rank in rarity|length %}
-                        <tr>
-                            <th> {{ rarity[rank] }}: </th>
-                            <td> {{ confidence[rank]*100|round(2) }}% </td>
-                        </tr>
-                        {% endfor %}
-                    </table>
-                {% endif %}
 
                 <!-- If you want to retrain the Model or Delete it -->
                 <h4>iia. Delete / Retrain Model</h4>
@@ -131,6 +106,10 @@
 
                 <!-- Display Model Info -->
                 <table>
+                    <tr>
+                        <th> Model Accuracy: </th>
+                        <td>{{ (dt_model['model'].model.score(X, Y) * 100)|round(2)}}% </td>
+                    </tr>
                     {% for key in dt_model['info'].keys() %}
                         <tr>
                             <th> {{ key }}: </th>
@@ -144,35 +123,6 @@
                         <td colspan="2"> {{ dt_model['model'].model.get_params() }} </td>
                     </tr>
                 </table>
-                <h4>ib. Prediction Basis</h4>
-                <form id="form" method="post"> <!-- action="{{ url_for('model') }}"-->
-                    {% for option in options %}
-                        {% if option == 'Level' %}
-                            <p><label>
-                                Level: <input name="level" value="{{ level }}"/>
-                            </label></p>
-                        {% elif option != 'Rarity' %}
-                            <p><label>
-                                Health: <input name="health" value="{{ health }}"/>
-                             </label></p>
-                        {% endif %}
-                        <br class="clear">
-                    {% endfor %}
-                    <button type="submit">Predict Rarity</button>
-                    <br class="clear">
-                </form>
-
-                <!-- If the Model Predicted -->
-                {% if dt_prediction %}
-                    <table>
-                        {% for rank in rarity|length %}
-                        <tr>
-                            <th> {{ rarity[rank] }}: </th>
-                            <td> {{ confidence[rank]*100|round(2) }}% </td>
-                        </tr>
-                        {% endfor %}
-                    </table>
-                {% endif %}
 
                 <!-- If you want to retrain the Model or Delete it -->
                 <h4>iib. Delete / Retrain Model</h4>
@@ -190,6 +140,10 @@
 
                 <!-- Display Model Info -->
                 <table>
+                    <tr>
+                        <th> Model Accuracy: </th>
+                        <td>{{ (knn_model['model'].model.score(X, Y) * 100)|round(2)}}% </td>
+                    </tr>
                     {% for key in knn_model['info'].keys() %}
                         <tr>
                             <th> {{ key }}: </th>
@@ -203,35 +157,7 @@
                         <td colspan="2"> {{ knn_model['model'].model.get_params() }} </td>
                     </tr>
                 </table>
-                <h4>ic. Prediction Basis</h4>
-                <form id="form" method="post"> <!-- action="{{ url_for('model') }}"-->
-                    {% for option in options %}
-                        {% if option == 'Level' %}
-                            <p><label>
-                                Level: <input name="level" value="{{ level }}"/>
-                            </label></p>
-                        {% elif option != 'Rarity' %}
-                            <p><label>
-                                Health: <input name="health" value="{{ health }}"/>
-                             </label></p>
-                        {% endif %}
-                        <br class="clear">
-                    {% endfor %}
-                    <button type="submit">Predict Rarity</button>
-                    <br class="clear">
-                </form>
 
-                <!-- If the Model Predicted -->
-                {% if knn_prediction %}
-                    <table>
-                        {% for rank in rarity|length %}
-                        <tr>
-                            <th> {{ rarity[rank] }}: </th>
-                            <td> {{ confidence[rank]*100|round(2) }}% </td>
-                        </tr>
-                        {% endfor %}
-                    </table>
-                {% endif %}
 
                 <!-- If you want to retrain the Model or Delete it -->
                 <h4>iic. Delete / Retrain Model</h4>
@@ -246,5 +172,46 @@
         {% endif %}
     {% else %}
         <h1> {{ warning }}</h1>
+    {% endif %}
+
+    <!-- Prediction Block -- Output for Models -->
+    {% if dt_model or knn_model or rfc_model %}
+        <h1>IV. Bandersnatch Models: Prediction Basis</h1>
+        <form id="form" method="post" name="predict_monster[]" action="{{ url_for('model') }}">
+            {% for option in options %}
+                {% if option == 'Level' %}
+                    <p><label>{{ option }}:
+                        <input type="number" min="1" step="1" id="{{ option }}" name="predict_monster[]">
+                    </label></p>
+                {% elif option not in  ['Level', 'Rarity'] %}
+                    <p><label>{{ option }}:
+                        <input type="number" min="1" step="0.01" id="{{ option }}" name="predict_monster[]">
+                     </label></p>
+                {% endif %}
+                <br class="clear">
+            {% endfor %}
+            <label for="random_monster" style="display:inline-block;">Randomize All:</label>
+            <input type="checkbox" id="random_monster" name="random_monster" value="1"
+                   style="display:inline-block;">
+            <br class="clear"><br class="clear">
+            <p><button type="submit">Predict Rarity</button></p>
+            <br class="clear">
+        </form>
+    {% endif %}
+
+    <!-- Results Block -- Output for Models -->
+    {% if results %}
+        <h1>V. Bandersnatch Models: Results!</h1>
+        {%  for model in results %}
+            <h2> {{ model[1] }} Predictions: </h2>
+            <table>
+            {% for key, value in model[0].items()  %}
+                <tr>
+                    <th> {{ key }}: </th>
+                    <td> {{ value[0] }} </td>
+                </tr>
+            {%  endfor %}
+            </table>
+        {% endfor %}
     {% endif %}
 {% endblock %}
