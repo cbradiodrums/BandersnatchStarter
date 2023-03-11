@@ -1,34 +1,250 @@
 {% extends "layout.html" %}
 {% block content %}
-    <h1>Bandersnatch Model</h1>
-    <p>{{ info | safe }}</p>
+    {%  set model_types = {"new_dt": 'Decision Tree', "new_rfc": 'Random Forest', "new_knn": 'K Nearest Neighbors'} %}
+    {% if not warning %} <!-- Database is not empty -->
+        <h1>I. Bandersnatch Models: Instantiate New Classifier Models</h1>
 
-    <h2>Prediction Basis</h2>
-    <form id="form" method="post" action="{{ url_for('model') }}">
-        <p><label>
-            Level: <input name="level" value="{{ level }}"/>
-        </label></p>
-        <br class="clear">
-        <p><label>
-            Health: <input name="health" value="{{ health }}"/>
-        </label></p>
-        <br class="clear">
-        <p><label>
-            Energy: <input name="energy" value="{{ energy }}"/>
-        </label></p>
-        <br class="clear">
-        <p><label>
-            Sanity: <input name="sanity" value="{{ sanity }}"/>
-        </label></p>
-        <br class="clear">
-        <button type="submit">Predict Rarity</button>
-        <br class="clear">
-    </form>
+        <!-- i. Models that have not been Instantiated -->
+        {% if (not dt_model or not rfc_model or not knn_model) and not tmp_model  %}
+            <form id="instantiate_models" name="instantiate_models[]" method="post" action="{{ url_for('model') }}">
+                <table>
+                        <tr>
+                        {% if not dt_model %}
+                            <td>
+                                <button type="submit" value="new_dt" name="instantiate_models[]">
+                                    New Decision Tree Model</button></td>
+                        {% endif %}
+                        {% if not rfc_model %}
+                            <td><button type="submit" value="new_rfc" name="instantiate_models[]">
+                                New Random Forest Model</button></td>
+                        {% endif %}
+                        {% if not knn_model %}
+                            <td><button type="submit" value="new_knn" name="instantiate_models[]">
+                                New K Nearest Neighbors</button></td>
+                        {% endif %}
+                </table>
+            </form>
 
-    <h3>
-        Prediction: {{ prediction }}
-        <br>
-        Confidence: {{ confidence }}
-    </h3>
+        <!-- ii. Instantiated Models that need Parameters Specified -->
+        {% elif tmp_model and model_params %}
+            <p>Submit Model Parameters:</p>
+            <h1>II. Bandersnatch Models: Specify New Model Parameters</h1>
+            <!-- model_params = {"param_name": [[min, max], default_value]} -->
+            <p style="color: #cdab53">{{ model_types[tmp_model] }} Classifier Model: </p>
+            <form id="model_params[]" name="model_params[]" method="post" action="{{ url_for('model') }}">
+            <table>
+            {% for key in model_params.keys() %}
+                <tr>
+                    <td>
+                        <label for="{{ key }}">{{ key }}: </label>
+                        <select name="model_params[]" id="{{ key }}">
+                            {%  for value in model_params[key][0] %}
+                                {% if value == model_params[key][1] %}
+                                    <option selected value="{{ key }}-{{ value }}"> {{ value }} (default)</option>
+                                {% else %}
+                                    <option value="{{ key }}-{{ value }}"> {{ value }} </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+            {% endfor %}
+            </table>
+            <p><button type="submit" name="model_params" value="model_params">Submit Model Parameters
+            </button></form>
 
+        <!-- iii. All Model Types (3) have been instantiated and trained -->
+        {% elif dt_model and rfc_model and knn_model %}
+            <p>All Model Types Instantiated</p>
+        {% elif tmp_model and not model_params %}
+            <p>Seems like we navigated away while submitting Model Parameters: </p>
+            <form id="parameter_reset[]" name="parameter_reset[]" method="post" action="{{ url_for('model') }}">
+                <p><button type="submit" name="parameter_reset[]" value="del_temp"> Clear Temporary Models </button>
+            </form>
+        {% endif %}
+
+        <!-- iv. Display Trained Models: Retrain, Delete, or Predict -->
+        {% if (dt_model or rfc_model or knn_model) and not model_params  %}
+            <h1>III. Bandersnatch Models: Retrain, Delete, or Predict</h1>
+
+            {%  if rfc_model %}
+                <h3 style="color: #cdab53">A) Random Forest Classifier Model</h3>
+
+                <!-- Display Model Info -->
+                <table>
+                    {% for key in rfc_model['info'].keys() %}
+                        <tr>
+                            <th> {{ key }}: </th>
+                            <td> {{ rfc_model['info'][key] }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <th colspan="2"> All Model Parameters: </th>
+                    </tr>
+                    <tr>
+                        <td colspan="2"> {{ rfc_model['model'].model.get_params() }} </td>
+                    </tr>
+                </table>
+                <h4>ia. Prediction Basis</h4>
+                <form id="form" method="post"> <!-- action="{{ url_for('model') }}"-->
+                    {% for option in options %}
+                        {% if option == 'Level' %}
+                            <p><label>
+                                Level: <input name="level" value="{{ level }}"/>
+                            </label></p>
+                        {% elif option != 'Rarity' %}
+                            <p><label>
+                                Health: <input name="health" value="{{ health }}"/>
+                             </label></p>
+                        {% endif %}
+                        <br class="clear">
+                    {% endfor %}
+                    <button type="submit">Predict Rarity</button>
+                    <br class="clear">
+                </form>
+
+                <!-- If the Model Predicted -->
+                {% if rfc_prediction %}
+                    <table>
+                        {% for rank in rarity|length %}
+                        <tr>
+                            <th> {{ rarity[rank] }}: </th>
+                            <td> {{ confidence[rank]*100|round(2) }}% </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+
+                <!-- If you want to retrain the Model or Delete it -->
+                <h4>iia. Delete / Retrain Model</h4>
+                <p><form method="post" action="{{ url_for('model') }}">
+                            <button type="submit" name="retrain_model[]" value="rfc_model">Retrain Model!
+                            </button></form>
+                <p><form method="post" action="{{ url_for('model') }}">
+                            <button type="submit" name="del_model[]" value="rfc_model">Delete Model!
+                            </button></form>
+                <br class="clear">
+            {% endif %}
+
+            {%  if dt_model %}
+                <h3 style="color: #cdab53">B) Decision Tree Classifier Model</h3>
+
+                <!-- Display Model Info -->
+                <table>
+                    {% for key in dt_model['info'].keys() %}
+                        <tr>
+                            <th> {{ key }}: </th>
+                            <td> {{ dt_model['info'][key] }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <th colspan="2"> All Model Parameters: </th>
+                    </tr>
+                    <tr>
+                        <td colspan="2"> {{ dt_model['model'].model.get_params() }} </td>
+                    </tr>
+                </table>
+                <h4>ib. Prediction Basis</h4>
+                <form id="form" method="post"> <!-- action="{{ url_for('model') }}"-->
+                    {% for option in options %}
+                        {% if option == 'Level' %}
+                            <p><label>
+                                Level: <input name="level" value="{{ level }}"/>
+                            </label></p>
+                        {% elif option != 'Rarity' %}
+                            <p><label>
+                                Health: <input name="health" value="{{ health }}"/>
+                             </label></p>
+                        {% endif %}
+                        <br class="clear">
+                    {% endfor %}
+                    <button type="submit">Predict Rarity</button>
+                    <br class="clear">
+                </form>
+
+                <!-- If the Model Predicted -->
+                {% if dt_prediction %}
+                    <table>
+                        {% for rank in rarity|length %}
+                        <tr>
+                            <th> {{ rarity[rank] }}: </th>
+                            <td> {{ confidence[rank]*100|round(2) }}% </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+
+                <!-- If you want to retrain the Model or Delete it -->
+                <h4>iib. Delete / Retrain Model</h4>
+                <p><form method="post" action="{{ url_for('model') }}">
+                            <button type="submit" name="retrain_model[]" value="dt_model">Retrain Model!
+                            </button></form>
+                <p><form method="post" action="{{ url_for('model') }}">
+                            <button type="submit" name="del_model[]" value="dt_model">Delete Model!
+                            </button></form>
+                <br class="clear">
+            {% endif %}
+
+            {%  if knn_model %}
+                <h3 style="color: #cdab53">C) K Nearest Neighbors Classifier Model</h3>
+
+                <!-- Display Model Info -->
+                <table>
+                    {% for key in knn_model['info'].keys() %}
+                        <tr>
+                            <th> {{ key }}: </th>
+                            <td> {{ knn_model['info'][key] }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <th colspan="2"> All Model Parameters: </th>
+                    </tr>
+                    <tr>
+                        <td colspan="2"> {{ knn_model['model'].model.get_params() }} </td>
+                    </tr>
+                </table>
+                <h4>ic. Prediction Basis</h4>
+                <form id="form" method="post"> <!-- action="{{ url_for('model') }}"-->
+                    {% for option in options %}
+                        {% if option == 'Level' %}
+                            <p><label>
+                                Level: <input name="level" value="{{ level }}"/>
+                            </label></p>
+                        {% elif option != 'Rarity' %}
+                            <p><label>
+                                Health: <input name="health" value="{{ health }}"/>
+                             </label></p>
+                        {% endif %}
+                        <br class="clear">
+                    {% endfor %}
+                    <button type="submit">Predict Rarity</button>
+                    <br class="clear">
+                </form>
+
+                <!-- If the Model Predicted -->
+                {% if knn_prediction %}
+                    <table>
+                        {% for rank in rarity|length %}
+                        <tr>
+                            <th> {{ rarity[rank] }}: </th>
+                            <td> {{ confidence[rank]*100|round(2) }}% </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% endif %}
+
+                <!-- If you want to retrain the Model or Delete it -->
+                <h4>iic. Delete / Retrain Model</h4>
+                <p><form method="post" action="{{ url_for('model') }}">
+                            <button type="submit" name="retrain_model[]" value="knn_model">Retrain Model!
+                            </button></form>
+                <p><form method="post" action="{{ url_for('model') }}">
+                            <button type="submit" name="del_model[]" value="knn_model">Delete Model!
+                            </button></form>
+                <br class="clear">
+            {% endif %}
+        {% endif %}
+    {% else %}
+        <h1> {{ warning }}</h1>
+    {% endif %}
 {% endblock %}
