@@ -1,13 +1,14 @@
 from base64 import b64decode
 import os
 
+import pandas as pd
 from Fortuna import random_int, random_float
 from MonsterLab import Monster
 from flask import Flask, render_template, request, current_app
 from pandas import DataFrame
 
 from app.data import Database
-from app.graph import chart, corr_heatmap, bar_chart, damage_calc
+from app.graph import chart, corr_heatmap, bar_chart, damage_calc, results_charts
 from app.machine import Machine
 
 SPRINT = 3
@@ -143,7 +144,7 @@ def view():
 
 
 @APP.route("/model", methods=["GET", "POST"])
-def model(model_params=None, tmp_error=None):
+def model(model_params=None, results=None):
     if SPRINT < 3:
         return render_template("model.html")
     print(f'model_params: {model_params}')
@@ -167,6 +168,12 @@ def model(model_params=None, tmp_error=None):
     tmp_model = tmp_model[0].split('.')[0] if tmp_model else None
     print(f'tmp_model: {tmp_model}')
 
+    # Determine what are the usable columns of the Monster Database:
+    options = ["Level", "Health", "Energy", "Sanity", "Rarity"]
+    ranks = ["Rank 0 (Very Common)", "Rank 1 (Common)", "Rank 2 (Uncommon)",
+             "Rank 3 (Rare)"," Rank 4 (Epic)", "Rank 5 (Legendary)"]
+    X, Y = db.dataframe()[options].drop(columns='Rarity'), db.dataframe()['Rarity']
+
     # If USER submitted form data
     if request.method == 'POST' or tmp_model:
         print(f"request.form.getlist('instantiate_models[]'): {request.form.getlist('instantiate_models[]')}")
@@ -174,6 +181,8 @@ def model(model_params=None, tmp_error=None):
         print(f"request.form.getlist('model_params[]'): {request.form.getlist('model_params[]')}")
         print(f"request.form.getlist('del_model[]'): {request.form.getlist('del_model[]')}")
         print(f"request.form.getlist('parameter_reset[]'): {request.form.getlist('parameter_reset[]')}")
+        print(f"request.form.getlist('predict_monster[]'): {request.form.getlist('predict_monster[]')}")
+        print(f"request.form.get('random_monster'): {request.form.get('random_monster')}")
 
         # If USER Instantiated New Model, No Temporary Model Pending
         if request.form.getlist('instantiate_models[]'):
@@ -182,7 +191,7 @@ def model(model_params=None, tmp_error=None):
             model_params = Machine.display_params(tmp_model=tmp_model)
             print(f'display model_params: {model_params}')
 
-            return render_template("model.html", dt_model=dt_model, rfc_model=rfc_model,
+            return render_template("model.html", dt_model=dt_model, rfc_model=rfc_model, options=options,
                                    knn_model=knn_model, tmp_model=tmp_model, model_params=model_params)
 
         # If USER Submitted New Model Parameters
@@ -193,7 +202,6 @@ def model(model_params=None, tmp_error=None):
             print(f'parsed model_params: {model_params}')
 
             # Instantiate and Fit a New Model Using the Parameters and Monster Database
-            options = ["Level", "Health", "Energy", "Sanity", "Rarity"]
             new_model = Machine(tmp_model=tmp_model, df=db.dataframe()[options],
                                 target='Rarity', model_params=model_params)
 
@@ -213,6 +221,48 @@ def model(model_params=None, tmp_error=None):
             os.remove(f'{model_path}\\{tmp_model}.joblib')
             tmp_model = None
 
+        # If USER wishes to Predict using a Model, Parse the Monster Attributes:
+        if request.form.getlist('predict_monster[]'):
+
+            usr_monster = request.form.getlist('predict_monster[]')
+            random_monster = [Monster().to_dict()[_] for _ in options[:-1]]
+            print(f'usr_monster: {usr_monster} | random_monster: {random_monster}')
+
+            if not request.form.get('random_monster'):
+
+                for n in range(len(usr_monster)):
+                    if not usr_monster[n]:
+                        usr_monster[n] = random_monster[n]
+                    else:
+                        replace = float(usr_monster[n]) if '.' in usr_monster[n] else int(usr_monster[n])
+                        usr_monster[n] = replace
+
+                print(f'PARSED usr_monster: {usr_monster}')
+
+            else:
+                usr_monster = random_monster
+
+            # Create a 2D Array (Dataframe) from new Monster!
+            usr_monster_2d = {}
+            for stat in range(len(usr_monster)):
+                usr_monster_2d.update({options[stat]: [usr_monster[stat]]})
+            print(f'usr_monster_2d: {usr_monster_2d}')
+            user_monster_x_df = pd.DataFrame(usr_monster_2d)
+            print(f'user_monster_x_df: {user_monster_x_df}')
+
+            # Return .predict() and .proba()[confidence] values from all models!
+            available_models = [dt_model, rfc_model, knn_model]
+            results = []
+            for ml in available_models:
+                if ml is not None:
+                    model_type, pred_dict = ml['info']['Type'], {}
+                    confidences = ml['model'].model.predict_proba(user_monster_x_df)
+                    prediction = ml['model'].model.predict(user_monster_x_df)
+                    for _ in range(len(ranks)):
+                        pred_dict.update({ranks[_]: [f"{round(confidences[0][_] * 100, 2)}%"]})
+                        print(pred_dict)
+                    results.append([pred_dict, model_type, prediction])
+
     # If Models were created in POST, open their Joblib Dictionaries:
     dt_model = Machine.open(f'{model_path}\\dt_model.joblib') \
         if os.path.exists(f'{model_path}\\dt_model.joblib') else None
@@ -221,8 +271,8 @@ def model(model_params=None, tmp_error=None):
     knn_model = Machine.open(f'{model_path}\\knn_model.joblib') \
         if os.path.exists(f'{model_path}\\knn_model.joblib') else None
 
-    return render_template("model.html", dt_model=dt_model, rfc_model=rfc_model,
-                           knn_model=knn_model, tmp_model=tmp_model)
+    return render_template("model.html", dt_model=dt_model, rfc_model=rfc_model, X=X, Y=Y,
+                           knn_model=knn_model, tmp_model=tmp_model, options=options, results=results)
 
 
 if __name__ == '__main__':
